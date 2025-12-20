@@ -19,7 +19,38 @@ public class Ingredient {
         return dish == null? null: dish.getName();
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public CategoryEnum getCategory() {
+        return category;
+    }
+
+    public Dish getDish() {
+        return dish;
+    }
+
+    public void setDish(Dish dish) {
+        this.dish = dish;
+    }
+
     public Double getPrice() {
         return price;
+    }
+
+    @Override
+    public String toString() {
+        return "Ingredient{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", category=" + category +
+                ", dish=" + getDishName() +
+                '}';
     }
 }

@@ -1,4 +1,4 @@
-CREATE  TYPE  dish_type as enum ('STARTER', 'MAIN', 'DESSERT')
+CREATE  TYPE  dish_type as enum ('STARTER', 'MAIN', 'DESSERT');
 
 CREATE TABLE Dish(
      id int PRIMARY KEY,
