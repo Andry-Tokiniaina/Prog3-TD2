@@ -17,6 +17,5 @@ public class DBConnection {
     }
 
     public void closeDBConnection(){
-        throw new RuntimeException("not implemented yet");
     }
 }
