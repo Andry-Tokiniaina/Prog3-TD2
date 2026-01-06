@@ -13,6 +13,10 @@ public class Dish {
         this.dishType = dishType;
         this.ingredients = ingredients;
     }
+    public Dish(String name, DishTypeEnum dishType, List<Ingredient> ingredients) {
+        this.name = name;
+        this.dishType = dishType;
+    }
 
     public Double getDishPrice() {
         return ingredients == null ? null : ingredients.stream().mapToDouble(Ingredient::getPrice).sum();

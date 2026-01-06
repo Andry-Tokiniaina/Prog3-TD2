@@ -109,18 +109,33 @@ public class DataRetriever {
 
     public List<Ingredient> createIngredients(List<Ingredient> ingredients) throws SQLException {
         DBConnection dbConnection = new DBConnection();
-        String query = "insert into ingredient values (?, ?, ?, ?, ?)";
+        String query = "insert into ingredient(id, name, price, category, id_dish) values (?, ?, ?, ?::ingredient_type, ?)";
         Connection conn = null;
         try  {
             conn = dbConnection.getDBConnection();
             PreparedStatement stmt = conn.prepareStatement(query);
             conn.setAutoCommit(false);
             for (Ingredient ingredient : ingredients) {
+                String checkQuery = "select count(id) from ingredient where name = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
+                    checkStmt.setString(1, ingredient.getName());
+                    ResultSet rs = checkStmt.executeQuery();
+                    rs.next();
+
+                    if (rs.getInt(1) > 0) {
+                        throw new RuntimeException("an ingredient with the name '"
+                                + ingredient.getName() + "' already exists");
+                    }
+                }
                 stmt.setInt(1, ingredient.getId());
                 stmt.setString(2, ingredient.getName());
                 stmt.setDouble(3, ingredient.getPrice());
                 stmt.setString(4, ingredient.getCategory().toString());
-                stmt.setInt(5, ingredient.getDish().getId());
+                if (ingredient.getDish() != null) {
+                    stmt.setInt(5, ingredient.getDish().getId());
+                }else {
+                    stmt.setNull(5, Types.INTEGER);
+                }
                 stmt.executeUpdate();
             }
             conn.commit();
@@ -141,38 +156,47 @@ public class DataRetriever {
 
     public Dish saveDish(Dish dishToSave) {
         DBConnection dbConnection = new DBConnection();
+
+        String selectQuery = "select id from dish where name = ?";
         String addQuery = "insert into dish values (?, ?, ?, ?)";
         String updateQuery = "update dish set name = ?, price = ?, dish_type = ? where id = ?";
-        String selectQuery = "select id from dish";
+
+        Connection conn = null;
 
         try {
-            List<Integer> dish_ids = new ArrayList<>();
-            Connection conn = dbConnection.getDBConnection();
+            conn = dbConnection.getDBConnection();
+
             PreparedStatement stmt = conn.prepareStatement(selectQuery);
+            stmt.setString(1, dishToSave.getName());
             ResultSet rs = stmt.executeQuery();
 
-            while(rs.next()){
-                dish_ids.add(rs.getInt("id"));
-            }
+            if (rs.next()) {
+                int existingId = rs.getInt("id");
 
-            if (dish_ids.contains(dishToSave.getId())) {
                 stmt = conn.prepareStatement(updateQuery);
                 stmt.setString(1, dishToSave.getName());
                 stmt.setDouble(2, dishToSave.getDishPrice());
-                stmt.setString(3, dishToSave.getDishType().toString());
-                stmt.setInt(4, dishToSave.getId());
-            }
-            else {
+                stmt.setString(3, dishToSave.getDishType().name());
+                stmt.setInt(4, existingId);
+
+                stmt.executeUpdate();
+            } else {
                 stmt = conn.prepareStatement(addQuery);
                 stmt.setInt(1, dishToSave.getId());
                 stmt.setString(2, dishToSave.getName());
                 stmt.setDouble(3, dishToSave.getDishPrice());
-                stmt.setString(4, dishToSave.getDishType().toString());
+                stmt.setString(4, dishToSave.getDishType().name());
+
+                stmt.executeUpdate();
             }
-            int rs1 = stmt.executeUpdate();
+
             conn.close();
-            return  dishToSave;
-        }catch (Exception e) {
+            return dishToSave;
+
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.close();
+            } catch (SQLException ignored) {}
             throw new RuntimeException(e);
         }
     }
@@ -181,7 +205,7 @@ public class DataRetriever {
         DBConnection dbConnection = new DBConnection();
         List<Dish> dishes = new ArrayList<>();
         String query = "select d.id, d.name, d.dish_type, i.id as ingredient_id, i.name as ingredient_name from dish d " +
-                "inner join ingredient i on d.id = i.dish_id " +
+                "inner join ingredient i on d.id = i.id_dish " +
                 "where i.name ilike ?";
         try {
             Connection conn = dbConnection.getDBConnection();
@@ -214,7 +238,7 @@ public class DataRetriever {
                 "inner join dish d " +
                 "on d.id = i.id_dish " +
                 "where (?::text is null or i.name ilike ?) " +
-                "and (?::text is null or i.category ilike ? ) " +
+                "and (?::text is null or i.category::text ilike ? ) " +
                 "and (?::text is null or d.name ilike ? ) "+
                 "limit ? offset ?";
         try {
@@ -222,8 +246,15 @@ public class DataRetriever {
             PreparedStatement stmt = conn.prepareStatement(query);
             stmt.setString(1, ingredientName);
             stmt.setString(2, "%"+ingredientName+"%");
-            stmt.setString(3, category.toString());
-            stmt.setString(4, "%"+category.toString()+"%");
+
+            if(category==null){
+                stmt.setNull(3, Types.VARCHAR);
+                stmt.setNull(4, Types.VARCHAR);
+            }else {
+                stmt.setString(3, category.toString());
+                stmt.setString(4, "%" + category.toString() + "%");
+            }
+
             stmt.setString(5, dishName);
             stmt.setString(6, "%"+dishName+"%");
             stmt.setInt(7, size);
