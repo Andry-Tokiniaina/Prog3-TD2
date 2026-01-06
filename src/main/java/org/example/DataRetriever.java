@@ -109,22 +109,13 @@ public class DataRetriever {
 
     public List<Ingredient> createIngredients(List<Ingredient> ingredients) throws SQLException {
         DBConnection dbConnection = new DBConnection();
-        String query = "insert into ingredient(name, price, category, id_dish) values ( ?, ?, ?::ingredient_type, ?)";
+        String query = "insert into ingredient(name, price, category, id_dish) values ( ?, ?, ?::ingredient_type, ?) returning id";
         Connection conn = null;
         try  {
             conn = dbConnection.getDBConnection();
             PreparedStatement stmt = conn.prepareStatement(query);
             conn.setAutoCommit(false);
             for (Ingredient ingredient : ingredients) {
-                String checkQuery = "select count(id) from ingredient where name = ?";
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
-                    checkStmt.setString(1, ingredient.getName());
-                    ResultSet rs = checkStmt.executeQuery();
-                    rs.next();
-                    if (rs.getInt(1) > 0) {
-                        throw new RuntimeException("an ingredient with  already exists");
-                    }
-                }
                 stmt.setString(1, ingredient.getName());
                 stmt.setDouble(2, ingredient.getPrice());
                 stmt.setString(3, ingredient.getCategory().name());
@@ -133,7 +124,10 @@ public class DataRetriever {
                 }else {
                     stmt.setNull(4, Types.INTEGER);
                 }
-                stmt.executeUpdate();
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    ingredient.setId(rs.getInt("id"));
+                }
             }
             conn.commit();
             conn.close();

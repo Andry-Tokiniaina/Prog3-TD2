@@ -70,4 +70,8 @@ public class Ingredient {
                 ", dish=" + getDishName() +
                 '}';
     }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 }
