@@ -109,7 +109,7 @@ public class DataRetriever {
 
     public List<Ingredient> createIngredients(List<Ingredient> ingredients) throws SQLException {
         DBConnection dbConnection = new DBConnection();
-        String query = "insert into ingredient(id, name, price, category, id_dish) values (?, ?, ?, ?::ingredient_type, ?)";
+        String query = "insert into ingredient(name, price, category, id_dish) values ( ?, ?, ?::ingredient_type, ?)";
         Connection conn = null;
         try  {
             conn = dbConnection.getDBConnection();
@@ -121,20 +121,17 @@ public class DataRetriever {
                     checkStmt.setString(1, ingredient.getName());
                     ResultSet rs = checkStmt.executeQuery();
                     rs.next();
-
                     if (rs.getInt(1) > 0) {
-                        throw new RuntimeException("an ingredient with the name '"
-                                + ingredient.getName() + "' already exists");
+                        throw new RuntimeException("an ingredient with  already exists");
                     }
                 }
-                stmt.setInt(1, ingredient.getId());
-                stmt.setString(2, ingredient.getName());
-                stmt.setDouble(3, ingredient.getPrice());
-                stmt.setString(4, ingredient.getCategory().toString());
+                stmt.setString(1, ingredient.getName());
+                stmt.setDouble(2, ingredient.getPrice());
+                stmt.setString(3, ingredient.getCategory().name());
                 if (ingredient.getDish() != null) {
-                    stmt.setInt(5, ingredient.getDish().getId());
+                    stmt.setInt(4, ingredient.getDish().getId());
                 }else {
-                    stmt.setNull(5, Types.INTEGER);
+                    stmt.setNull(4, Types.INTEGER);
                 }
                 stmt.executeUpdate();
             }
@@ -154,45 +151,67 @@ public class DataRetriever {
         }
     }
 
+    public Ingredient findIngredientByName(String name) throws SQLException {
+        DBConnection dbConnection = new DBConnection();
+        String Query = "select id, name, price, category from ingredient where name = ?";
+        Connection conn = null;
+        conn = dbConnection.getDBConnection();
+        PreparedStatement stmt = conn.prepareStatement(Query);
+        stmt.setString(1, name);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return new Ingredient(rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getDouble("price"),
+                    CategoryEnum.valueOf(rs.getString("category")));
+        }
+        conn.close();
+        return null;
+    }
+
     public Dish saveDish(Dish dishToSave) {
         DBConnection dbConnection = new DBConnection();
 
         String selectQuery = "select id from dish where name = ?";
-        String addQuery = "insert into dish values (?, ?, ?, ?)";
-        String updateQuery = "update dish set name = ?, price = ?, dish_type = ? where id = ?";
+        String addQuery = "insert into dish(name, dish_type) values ( ?, ?::dish_type) returning id";
+        String updateQuery = "update dish set name = ?, dish_type = ?::dish_type where id = ?";
+        String updateQueryReturningId = "update dish set name = ?, dish_type = ?::dish_type where id = ? returning id";
 
         Connection conn = null;
 
         try {
             conn = dbConnection.getDBConnection();
-
-            PreparedStatement stmt = conn.prepareStatement(selectQuery);
-            stmt.setString(1, dishToSave.getName());
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                int existingId = rs.getInt("id");
-
-                stmt = conn.prepareStatement(updateQuery);
+            if (dishToSave.getId() != null) {
+                PreparedStatement stmt = conn.prepareStatement(updateQuery);
                 stmt.setString(1, dishToSave.getName());
-                stmt.setDouble(2, dishToSave.getDishPrice());
-                stmt.setString(3, dishToSave.getDishType().name());
-                stmt.setInt(4, existingId);
-
+                stmt.setString(2, dishToSave.getDishType().name());
+                stmt.setInt(3, dishToSave.getId());
                 stmt.executeUpdate();
-            } else {
-                stmt = conn.prepareStatement(addQuery);
-                stmt.setInt(1, dishToSave.getId());
-                stmt.setString(2, dishToSave.getName());
-                stmt.setDouble(3, dishToSave.getDishPrice());
-                stmt.setString(4, dishToSave.getDishType().name());
+            }else {
+                PreparedStatement stmt = conn.prepareStatement(selectQuery);
+                stmt.setString(1, dishToSave.getName());
+                ResultSet rs = stmt.executeQuery();
 
-                stmt.executeUpdate();
+                if (rs.next()) {
+                    int existingId = rs.getInt("id");
+
+                    stmt = conn.prepareStatement(updateQueryReturningId);
+                    stmt.setString(1, dishToSave.getName());
+                    stmt.setString(2, dishToSave.getDishType().name());
+                    stmt.setInt(3, existingId);
+                } else {
+                    stmt = conn.prepareStatement(addQuery);
+                    stmt.setString(1, dishToSave.getName());
+                    stmt.setString(2, dishToSave.getDishType().name());
+                }
+                ResultSet rs4 = stmt.executeQuery();
+                if (rs4.next()) {
+                    dishToSave.setId(rs4.getInt("id"));
+                }
             }
 
             conn.close();
             return dishToSave;
-
         } catch (SQLException e) {
             try {
                 if (conn != null) conn.close();
