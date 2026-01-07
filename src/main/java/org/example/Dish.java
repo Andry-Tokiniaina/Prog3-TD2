@@ -6,19 +6,34 @@ public class Dish {
     private Integer id;
     private String name;
     private DishTypeEnum dishType;
+    private Double price;
     List<Ingredient> ingredients;
-    public Dish( int id, String name, DishTypeEnum dishType, List<Ingredient> ingredients) {
+    public Dish( int id, String name, DishTypeEnum dishType, Double price, List<Ingredient> ingredients) {
         this.id = id;
         this.name = name;
         this.dishType = dishType;
+        this.price = price;
+        this.ingredients = ingredients;
+    }
+    public Dish(String name, DishTypeEnum dishType, Double price, List<Ingredient> ingredients) {
+        this.name = name;
+        this.dishType = dishType;
+        this.price = price;
         this.ingredients = ingredients;
     }
     public Dish(String name, DishTypeEnum dishType, List<Ingredient> ingredients) {
         this.name = name;
         this.dishType = dishType;
+        this.ingredients = ingredients;
+    }
+    public Dish(int id, String name, DishTypeEnum dishType, List<Ingredient> ingredients) {
+        this.id = id;
+        this.name = name;
+        this.dishType = dishType;
+        this.ingredients = ingredients;
     }
 
-    public Double getDishPrice() {
+    public Double getDishCost() {
         return ingredients == null ? null : ingredients.stream().mapToDouble(Ingredient::getPrice).sum();
     }
 
@@ -39,6 +54,18 @@ public class Dish {
     }
 
     public void setId(Integer id) {this.id = id; }
+
+    public Double getPrice() {
+        return price;
+    }
+
+    public Double getGrossMargin() {
+        try {
+            return this.getPrice()-this.getDishCost();
+        }catch (Exception e){
+            throw new RuntimeException("the sell value is not yet defined");
+        }
+    }
 
     @Override
     public String toString() {

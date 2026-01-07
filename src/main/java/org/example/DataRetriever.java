@@ -34,7 +34,7 @@ public class DataRetriever {
 
     public Dish findDishById(int id) {
         DBConnection dbConnection = new DBConnection();
-        String queryDish = "select id, name, dish_type from dish where id = ?";
+        String queryDish = "select id, name, dish_type, price from dish where id = ?";
 
         try {
             Connection conn = dbConnection.getDBConnection();
@@ -51,6 +51,7 @@ public class DataRetriever {
                         rsDish.getInt("id"),
                         rsDish.getString("name"),
                         DishTypeEnum.valueOf(rsDish.getString("dish_type")),
+                        rsDish.getDouble("price"),
                         ingredients
                 );
             }
@@ -69,7 +70,7 @@ public class DataRetriever {
         DBConnection dbConnection = new DBConnection();
         int offset = (page - 1) * size;
         String query = "select i.id, i.name, i.price, i.category, i.id_dish," +
-                " d.id as dish_id, d.name as dish_name, d.dish_type as dish_type " +
+                " d.id as dish_id, d.name as dish_name, d.dish_type as dish_type, d.price as dish_price, " +
                 "from ingredient i " +
                 "inner join dish d on d.id = i.id_dish " +
                 "limit ? offset ?";
@@ -87,6 +88,7 @@ public class DataRetriever {
                         rs.getInt("dish_id"),
                         rs.getString("dish_name"),
                         DishTypeEnum.valueOf(rs.getString("dish_type")),
+                        rs.getDouble("dish_price"),
                         new ArrayList<>()
                 );
                 Ingredient ingredient = new Ingredient(
@@ -147,7 +149,7 @@ public class DataRetriever {
 
     public Ingredient findIngredientByName(String name) throws SQLException {
         DBConnection dbConnection = new DBConnection();
-        String Query = "select id, name, price, category from ingredient where name = ?";
+        String Query = "select id, name, price, category from ingredient where name ilike ?";
         Connection conn = null;
         conn = dbConnection.getDBConnection();
         PreparedStatement stmt = conn.prepareStatement(Query);
@@ -168,6 +170,7 @@ public class DataRetriever {
 
         String selectQuery = "select id from dish where name = ?";
         String addQuery = "insert into dish(name, dish_type) values ( ?, ?::dish_type) returning id";
+        String uptdateIngredient = "update ingredient set id_dish = ? where id = ?";
         String updateQuery = "update dish set name = ?, dish_type = ?::dish_type where id = ?";
         String updateQueryReturningId = "update dish set name = ?, dish_type = ?::dish_type where id = ? returning id";
 
@@ -183,6 +186,7 @@ public class DataRetriever {
                 stmt.executeUpdate();
             }else {
                 PreparedStatement stmt = conn.prepareStatement(selectQuery);
+                PreparedStatement updateIngredientstmt = null;
                 stmt.setString(1, dishToSave.getName());
                 ResultSet rs = stmt.executeQuery();
 
@@ -195,12 +199,19 @@ public class DataRetriever {
                     stmt.setInt(3, existingId);
                 } else {
                     stmt = conn.prepareStatement(addQuery);
+                    updateIngredientstmt = conn.prepareStatement(uptdateIngredient);
                     stmt.setString(1, dishToSave.getName());
                     stmt.setString(2, dishToSave.getDishType().name());
                 }
                 ResultSet rs4 = stmt.executeQuery();
                 if (rs4.next()) {
                     dishToSave.setId(rs4.getInt("id"));
+                    if (updateIngredientstmt != null) {
+                        for (Ingredient ingredient : dishToSave.getIngredients()) {
+                            updateIngredientstmt.setInt(1, dishToSave.getId());
+                            updateIngredientstmt.setInt(2, ingredient.getId());
+                        }
+                    }
                 }
             }
 
@@ -217,7 +228,7 @@ public class DataRetriever {
     public List<Dish> findDishByIngredientName(String ingredientName) {
         DBConnection dbConnection = new DBConnection();
         List<Dish> dishes = new ArrayList<>();
-        String query = "select d.id, d.name, d.dish_type, i.id as ingredient_id, i.name as ingredient_name from dish d " +
+        String query = "select d.id, d.name, d.dish_type, d.price,  i.id as ingredient_id, i.name as ingredient_name from dish d " +
                 "inner join ingredient i on d.id = i.id_dish " +
                 "where i.name ilike ?";
         try {
@@ -230,6 +241,7 @@ public class DataRetriever {
                     rs.getInt("id"),
                     rs.getString("name"),
                     DishTypeEnum.valueOf(rs.getString("dish_type")),
+                    rs.getDouble("price"),
                     findDishIngredients(rs.getInt("id"))
                 );
                 dishes.add(dish);
@@ -246,7 +258,7 @@ public class DataRetriever {
         DBConnection dbConnection = new DBConnection();
         List<Ingredient> ingredients = new ArrayList<>();
         int offset = (page - 1) * size;
-        String query = "select i.id, i.name, i.price, i.category, d.id as dish_id, d.name as dish_name, d.dish_type " +
+        String query = "select i.id, i.name, i.price, i.category, d.id as dish_id, d.name as dish_name, d.dish_type, d.price as dish_price " +
                 "from ingredient i " +
                 "inner join dish d " +
                 "on d.id = i.id_dish " +
@@ -278,6 +290,7 @@ public class DataRetriever {
                         rs.getInt("dish_id"),
                         rs.getString("dish_name"),
                         DishTypeEnum.valueOf(rs.getString("dish_type")),
+                        rs.getDouble("dish_price"),
                         findDishIngredients(rs.getInt("dish_id"))
                 );
                 Ingredient ingredient = new Ingredient(
