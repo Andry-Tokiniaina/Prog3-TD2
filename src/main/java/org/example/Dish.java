@@ -8,6 +8,7 @@ public class Dish {
     private DishTypeEnum dishType;
     private Double price;
     List<Ingredient> ingredients;
+
     public Dish( int id, String name, DishTypeEnum dishType, Double price, List<Ingredient> ingredients) {
         this.id = id;
         this.name = name;
