@@ -19,12 +19,18 @@ public class Main {
         //        new Ingredient( "Oignon", 500.00, CategoryEnum.VEGETABLE, null))));
         //System.out.println(dataRetriever.createIngredients(List.of(new Ingredient("Carotte", 2000.00, CategoryEnum.VEGETABLE),
         //       new Ingredient("Laitue", 2000.00, CategoryEnum.VEGETABLE))));
+
+
         System.out.println(dataRetriever.saveDish(new Dish("Soupe de légumes", DishTypeEnum.STARTER, List.of(dataRetriever.findIngredientByName("Oignon")))));
+
         System.out.println(dataRetriever.saveDish(new Dish(1, "Salade fraîche", DishTypeEnum.STARTER,
                 List.of(dataRetriever.findIngredientByName("Oignon"), dataRetriever.findIngredientByName("Laitue"),
                         dataRetriever.findIngredientByName("Tomate"),  dataRetriever.findIngredientByName("Fromage")))));
-        System.out.println(dataRetriever.saveDish(new Dish(1, "Salade de fromage", DishTypeEnum.STARTER,
+        System.out.println(dataRetriever.saveDish(new Dish(1, "Salade de fromage", DishTypeEnum.STARTER, 2000.00,
                  List.of(dataRetriever.findIngredientByName("Fromage")))));
 
+
+        //System.out.println(dataRetriever.findDishById(1).getGrossMargin());
+        System.out.println(dataRetriever.findDishById(2).getGrossMargin());
     }
 }

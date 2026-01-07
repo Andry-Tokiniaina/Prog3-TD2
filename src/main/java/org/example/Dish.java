@@ -61,6 +61,9 @@ public class Dish {
 
     public Double getGrossMargin() {
         try {
+            if (this.getPrice()==0 || this.getPrice()==null){
+                throw new RuntimeException("the sell value is not yet defined");
+            }
             return this.getPrice()-this.getDishCost();
         }catch (Exception e){
             throw new RuntimeException("the sell value is not yet defined");
@@ -73,6 +76,7 @@ public class Dish {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", dishType=" + dishType +
+                ", price=" + price +
                 ", ingredients=" + ingredients +
                 '}';
     }

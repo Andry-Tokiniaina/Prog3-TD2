@@ -70,7 +70,7 @@ public class DataRetriever {
         DBConnection dbConnection = new DBConnection();
         int offset = (page - 1) * size;
         String query = "select i.id, i.name, i.price, i.category, i.id_dish," +
-                " d.id as dish_id, d.name as dish_name, d.dish_type as dish_type, d.price as dish_price, " +
+                " d.id as dish_id, d.name as dish_name, d.dish_type as dish_type, d.price as dish_price " +
                 "from ingredient i " +
                 "inner join dish d on d.id = i.id_dish " +
                 "limit ? offset ?";
@@ -171,8 +171,8 @@ public class DataRetriever {
         String selectQuery = "select id from dish where name = ?";
         String addQuery = "insert into dish(name, dish_type) values ( ?, ?::dish_type) returning id";
         String uptdateIngredient = "update ingredient set id_dish = ? where id = ?";
-        String updateQuery = "update dish set name = ?, dish_type = ?::dish_type where id = ?";
-        String updateQueryReturningId = "update dish set name = ?, dish_type = ?::dish_type where id = ? returning id";
+        String updateQuery = "update dish set name = ?, dish_type = ?::dish_type, price = ?  where id = ?";
+        String updateQueryReturningId = "update dish set name = ?, dish_type = ?::dish_type, price = ? where id = ? returning id";
 
         Connection conn = null;
 
@@ -182,7 +182,12 @@ public class DataRetriever {
                 PreparedStatement stmt = conn.prepareStatement(updateQuery);
                 stmt.setString(1, dishToSave.getName());
                 stmt.setString(2, dishToSave.getDishType().name());
-                stmt.setInt(3, dishToSave.getId());
+                if (dishToSave.getPrice() != null) {
+                    stmt.setDouble(3, dishToSave.getPrice());
+                }else {
+                    stmt.setNull(3, Types.DOUBLE);
+                }
+                stmt.setInt(4, dishToSave.getId());
                 stmt.executeUpdate();
             }else {
                 PreparedStatement stmt = conn.prepareStatement(selectQuery);
@@ -196,7 +201,12 @@ public class DataRetriever {
                     stmt = conn.prepareStatement(updateQueryReturningId);
                     stmt.setString(1, dishToSave.getName());
                     stmt.setString(2, dishToSave.getDishType().name());
-                    stmt.setInt(3, existingId);
+                    if (dishToSave.getPrice() != null) {
+                        stmt.setDouble(3, dishToSave.getPrice());
+                    }else {
+                        stmt.setNull(3, Types.DOUBLE);
+                    }
+                    stmt.setInt(4, existingId);
                 } else {
                     stmt = conn.prepareStatement(addQuery);
                     updateIngredientstmt = conn.prepareStatement(uptdateIngredient);
@@ -210,6 +220,7 @@ public class DataRetriever {
                         for (Ingredient ingredient : dishToSave.getIngredients()) {
                             updateIngredientstmt.setInt(1, dishToSave.getId());
                             updateIngredientstmt.setInt(2, ingredient.getId());
+                            stmt.executeUpdate();
                         }
                     }
                 }
