@@ -436,6 +436,9 @@ public class DataRetriever {
             conn.setAutoCommit(false);
 
             Map<Integer, StockValue> requiredIngredients = new HashMap<>();
+            if (toSave.getTableOrder().getTable() == null){
+                throw new RuntimeException("no table given");
+            }
 
             for (DishOrder dishOrder : toSave.getDishOrders()) {
                 for (DishIngredient dishIngredient : dishOrder.getDish().getDishIngredients()) {
