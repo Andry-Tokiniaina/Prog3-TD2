@@ -6,6 +6,9 @@ public class DishIngredient {
     private Double quantity;
     private Unit unit;
 
+    public DishIngredient() {
+    }
+
     public Ingredient getIngredient() {
         return ingredient;
     }
